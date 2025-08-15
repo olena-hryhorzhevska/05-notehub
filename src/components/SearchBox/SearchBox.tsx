@@ -1,5 +1,4 @@
 import css from "./SearchBox.module.css";
-import { useDebouncedCallback } from "use-debounce";
 
 interface SearchBoxProps {
   search: string;
@@ -7,14 +6,15 @@ interface SearchBoxProps {
   handlePage: (num: number) => void;
 }
 
-export default function SearchBox({ search, setSearch, handlePage }: SearchBoxProps) {
-  const handleChange = useDebouncedCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setSearch(event.target.value);
-      handlePage(1);
-    },
-    300
-  );
+export default function SearchBox({
+  search,
+  setSearch,
+  handlePage,
+}: SearchBoxProps) {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(event.target.value);
+    handlePage(1);
+  };
 
   return (
     <>

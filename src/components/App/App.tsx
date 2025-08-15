@@ -16,16 +16,18 @@ import { createNote, deleteNote } from "../../services/noteService";
 import { Note, NoteFormValues } from "../../types/note";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
+import { useDebounce } from "use-debounce";
 
 export default function App() {
   const [search, setSearh] = useState("");
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [debouncedSearch] = useDebounce(search, 300);
   const perPage = 12;
 
   const { data, isLoading, isError, isSuccess } = useQuery({
-    queryKey: ["notes", search, page, perPage],
-    queryFn: () => fetchNotes(search, page, perPage),
+    queryKey: ["notes", debouncedSearch, page, perPage],
+    queryFn: () => fetchNotes(debouncedSearch, page, perPage),
     placeholderData: keepPreviousData,
   });
 
