@@ -64,7 +64,7 @@ export default function App() {
     onError: (err) => {
       const msg = err instanceof Error ? err.message : "Unknown error";
       toast.error(`${msg}`);
-    }
+    },
   });
 
   const handleDelete = (id: string) => {
