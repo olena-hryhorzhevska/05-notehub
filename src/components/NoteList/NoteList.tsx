@@ -1,17 +1,38 @@
 import css from "./NoteList.module.css";
 import { Note } from "../../types/note";
+import { deleteNote } from "../../services/noteService";
+import toast from "react-hot-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface NoteListProps {
   notes: Note[];
-  onDelete: (id: string) => void;
-  isDeleting: boolean;
-  deletingId: string;
 }
-export default function NoteList({ notes, onDelete, isDeleting, deletingId }: NoteListProps) {
+
+export default function NoteList({ notes }: NoteListProps) {
+  const queryClient = useQueryClient();
+
+  const deleteNoteMutation = useMutation<Note, Error, string>({
+    mutationFn: (id: string) => deleteNote(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast.success("Note deleted successfully");
+    },
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`${msg}`);
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    deleteNoteMutation.mutate(id);
+  };
+
   return (
     <ul className={css.list}>
       {notes.map((note) => {
-        const disabled = isDeleting && deletingId === note.id;
+        const isDeleting =
+          deleteNoteMutation.isPending &&
+          deleteNoteMutation.variables === note.id;
         return (
           <li key={note.id} className={css.listItem}>
             <h2 className={css.title}>{note.title}</h2>
@@ -20,11 +41,11 @@ export default function NoteList({ notes, onDelete, isDeleting, deletingId }: No
               <span className={css.tag}>{note.tag}</span>
               <button
                 className={css.button}
-                onClick={() => onDelete(note.id!)}
-                disabled={disabled}
-                aria-busy={disabled}
+                onClick={() => handleDelete(note.id!)}
+                disabled={isDeleting}
+                aria-busy={isDeleting}
               >
-                {disabled ? "Deleting…" : "Delete"}
+                {isDeleting ? "Deleting…" : "Delete"}
               </button>
             </div>
           </li>

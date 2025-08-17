@@ -1,8 +1,11 @@
 import { useId } from "react";
 import * as Yup from "yup";
 import css from "./NoteForm.module.css";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createNote } from "../../services/noteService";
+import toast from "react-hot-toast";
 import { ErrorMessage, Field, Form, Formik, FormikHelpers } from "formik";
-import { NoteFormValues, Note } from "../../types/note";
+import { NoteFormValues, Note, NoteTag, noteTags } from "../../types/note";
 
 const initialValues: NoteFormValues = {
   title: "",
@@ -16,34 +19,46 @@ const OrderFormSchema = Yup.object().shape({
     .max(50, "Title is too long")
     .required("Title is required"),
   content: Yup.string().max(500, "Content is too long"),
-  tag: Yup.string()
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"], "Invalid tag")
+  tag: Yup.mixed<NoteTag>()
+    .oneOf(noteTags, "Invalid tag")
     .required("Tag is required"),
 });
 
 interface NoteFormProps {
-  onCancel: () => void;
-  onSubmit: (values: NoteFormValues) => Promise<Note>;
+  onClose: (reason: 'created' | 'canceled') => void;
 }
 
-export default function NoteForm({ onCancel, onSubmit }: NoteFormProps) {
+export default function NoteForm({ onClose }: NoteFormProps) {
+  const queryClient = useQueryClient();
+  const createNoteMutation = useMutation<Note, Error, NoteFormValues>({
+    mutationFn: (newNote) => createNote(newNote),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      onClose('created');
+      toast.success("Note created successfully");
+    },
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`${msg}`);
+    },
+  });
+
   const handleSubmit = async (
     values: NoteFormValues,
     actions: FormikHelpers<NoteFormValues>
   ) => {
-    await onSubmit(values);
+    await createNoteMutation.mutateAsync(values);
     actions.resetForm();
   };
 
   const fieldId = useId();
 
   return (
-    <Formik
+    <Formik<NoteFormValues>
       initialValues={initialValues}
       validationSchema={OrderFormSchema}
       onSubmit={handleSubmit}
     >
-      {({ isSubmitting }) => (
         <Form className={css.form}>
           <div className={css.formGroup}>
             <label htmlFor={`${fieldId}-title`}>Title</label>
@@ -91,7 +106,7 @@ export default function NoteForm({ onCancel, onSubmit }: NoteFormProps) {
 
           <div className={css.actions}>
             <button
-              onClick={onCancel}
+              onClick={() => onClose('canceled')}
               type="button"
               className={css.cancelButton}
             >
@@ -100,13 +115,12 @@ export default function NoteForm({ onCancel, onSubmit }: NoteFormProps) {
             <button
               type="submit"
               className={css.submitButton}
-              disabled={isSubmitting}
+              disabled={createNoteMutation.isPending}
             >
-              {isSubmitting ? "Creating note..." : "Create note"}
+              {createNoteMutation.isPending ? "Creating note..." : "Create note"}
             </button>
           </div>
         </Form>
-      )}
     </Formik>
   );
 }
