@@ -18,7 +18,7 @@ const OrderFormSchema = Yup.object().shape({
     .min(3, "Title must be at least 3 characters")
     .max(50, "Title is too long")
     .required("Title is required"),
-  content: Yup.string().max(500, "Content is too long"),
+  content: Yup.string().max(500, "Content is too long. Allowed 500 characters only"),
   tag: Yup.mixed<NoteTag>()
     .oneOf(noteTags, "Invalid tag")
     .required("Tag is required"),
